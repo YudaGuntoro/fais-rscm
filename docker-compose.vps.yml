@@ -1,12 +1,12 @@
-name: shms-system
+name: rscm-fais
 
 services:
   api:
     build:
       context: ./Backend
       dockerfile: Web.API/Dockerfile
-    image: shms-system-api:latest
-    container_name: shms-api
+    image: rscm-fais-api:latest
+    container_name: rscm-fais-api
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -14,8 +14,8 @@ services:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: ${MYSQL_CONNECTION_STRING}
-      Jwt__Issuer: ${JWT_ISSUER:-SHMSSystem}
-      Jwt__Audience: ${JWT_AUDIENCE:-SHMSSystem.Frontend}
+      Jwt__Issuer: ${JWT_ISSUER:-RSCMFAIS}
+      Jwt__Audience: ${JWT_AUDIENCE:-RSCMFAIS.Frontend}
       Jwt__SigningKey: ${JWT_SIGNING_KEY}
       Jwt__ExpiresHours: ${JWT_EXPIRES_HOURS:-8}
       Swagger__Enabled: ${SWAGGER_ENABLED:-false}
@@ -24,7 +24,7 @@ services:
     ports:
       - "${API_HOST_PORT:-5274}:8080"
     networks:
-      - shms-net
+      - rscm-fais-net
 
   web:
     build:
@@ -33,8 +33,8 @@ services:
       args:
         NEXT_PUBLIC_API_BASE_URL: ""
         SERVER_API_BASE_URL: ${SERVER_API_BASE_URL:-http://api:8080}
-    image: shms-system-web:latest
-    container_name: shms-web
+    image: rscm-fais-web:latest
+    container_name: rscm-fais-web
     restart: unless-stopped
     depends_on:
       - api
@@ -44,7 +44,7 @@ services:
     ports:
       - "${FRONTEND_HOST_PORT:-8091}:3000"
     networks:
-      - shms-net
+      - rscm-fais-net
 
   worker:
     profiles:
@@ -52,8 +52,8 @@ services:
     build:
       context: ./Backend/Worker
       dockerfile: Dockerfile
-    image: shms-system-worker:latest
-    container_name: shms-worker
+    image: rscm-fais-worker:latest
+    container_name: rscm-fais-worker
     restart: unless-stopped
     depends_on:
       - api
@@ -63,7 +63,7 @@ services:
       MQTT_HOST: ${MQTT_HOST:-host.docker.internal}
       MQTT_PORT: ${MQTT_PORT:-1883}
       MQTT_CLIENT_ID: ${MQTT_CLIENT_ID:-Worker}
-      MQTT_TOPIC: ${MQTT_TOPIC:-shms_mqtt}
+      MQTT_TOPIC: ${MQTT_TOPIC:-fais_mqtt}
       MQTT_QOS: ${MQTT_QOS:-2}
       MQTT_USERNAME: ${MQTT_USERNAME:-}
       MQTT_PASSWORD: ${MQTT_PASSWORD:-}
@@ -73,28 +73,28 @@ services:
       MAIN_SERVER_UPLOAD_URL: ${MAIN_SERVER_UPLOAD_URL:-}
       MAIN_SERVER_TIMEOUT_SECONDS: ${MAIN_SERVER_TIMEOUT_SECONDS:-5}
       REDIS_CONNECTION_STRING: ${REDIS_CONNECTION_STRING:-redis:6379}
-      REDIS_BUFFER_KEY: ${REDIS_BUFFER_KEY:-shms:mqtt:buffer}
+      REDIS_BUFFER_KEY: ${REDIS_BUFFER_KEY:-fais:mqtt:buffer}
     volumes:
       - ./Backend/Worker/Settings.ini:/app/Settings.ini:ro
-      - shms-worker-buffer:/app/buffer
+      - rscm-fais-worker-buffer:/app/buffer
     networks:
-      - shms-net
+      - rscm-fais-net
 
   redis:
     image: redis:7-alpine
-    container_name: shms-redis
+    container_name: rscm-fais-redis
     restart: unless-stopped
     ports:
       - "${REDIS_HOST_PORT:-6379}:6379"
     volumes:
-      - shms-redis-data:/data
+      - rscm-fais-redis-data:/data
     networks:
-      - shms-net
+      - rscm-fais-net
 
 networks:
-  shms-net:
+  rscm-fais-net:
     driver: bridge
 
 volumes:
-  shms-worker-buffer:
-  shms-redis-data:
+  rscm-fais-worker-buffer:
+  rscm-fais-redis-data:

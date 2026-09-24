@@ -35,7 +35,7 @@ export type SystemSettings = UnitSettings & {
   vwUnit: string;
 };
 
-export const SYSTEM_SETTINGS_STORAGE_KEY = "shms-system-backup-settings";
+export const SYSTEM_SETTINGS_STORAGE_KEY = "rscm-fais-backup-settings";
 
 export const defaultSystemSettings: SystemSettings = {
   accUnit: "g",
@@ -115,7 +115,7 @@ export async function fetchSystemSettings() {
   const localSettings = readSystemSettings();
 
   try {
-    const settings = fromApiSettings(await apiGet<ApiSystemSettings>("/api/shms-system/settings"), localSettings);
+    const settings = fromApiSettings(await apiGet<ApiSystemSettings>("/api/rscm-fais/settings"), localSettings);
     saveSystemSettings(settings);
     return settings;
   } catch {
@@ -127,7 +127,7 @@ export async function updateSystemSettings(settings: SystemSettings) {
   saveSystemSettings(settings);
 
   try {
-    const updated = fromApiSettings(await apiRequest<ApiSystemSettings>("/api/shms-system/settings", {
+    const updated = fromApiSettings(await apiRequest<ApiSystemSettings>("/api/rscm-fais/settings", {
       body: JSON.stringify(toApiSettings(settings)),
       method: "PUT",
     }), settings);

@@ -1,8 +1,7 @@
 "use client";
-"use client";
 
-import SHMSMark from "@/components/brand/SHMSMark";
 import { EyeCloseIcon, EyeIcon, LockIcon, UserIcon } from "@/icons";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useId, useState } from "react";
 import { apiPost } from "@/lib/api";
@@ -66,8 +65,8 @@ export default function SignInPage() {
     <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden px-4 py-8 text-white sm:px-6">
       <div
         aria-hidden="true"
-        className="absolute inset-0 scale-[1.01] bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/images/auth/shms-bridge-login.png')" }}
+        className="absolute inset-0 bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/images/auth/shms-bridge-login.png')", backgroundSize: "100% 100%" }}
       />
       <div className="absolute inset-0 bg-[#07121d]/42" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(51,131,202,0.08),transparent_55%),linear-gradient(180deg,rgba(7,18,29,0.18),rgba(7,18,29,0.62))]" />
@@ -75,14 +74,21 @@ export default function SignInPage() {
       <div className="relative z-10 w-full max-w-[500px]">
         <div className="rounded-lg border border-white/18 bg-[#172231]/84 px-8 py-10 shadow-[0_28px_80px_rgba(0,0,0,0.36)] backdrop-blur-[6px] sm:px-8">
           <div className="mb-8 text-center">
-            <div className="mx-auto flex h-20 w-52 items-center justify-center">
-              <SHMSMark className="h-full w-full object-contain" variant="dark" />
+            <div className="mx-auto flex h-[72px] w-56 items-center justify-center p-2">
+              <Image
+                alt="RSCM Fire Alarm Integration System"
+                className="h-full w-full object-contain"
+                height={160}
+                src="/images/logo/rscm-fais-login-logo.png"
+                priority
+                width={416}
+              />
             </div>
             <h1 className="mt-5 text-[15px] font-extrabold leading-tight text-white whitespace-nowrap sm:text-[20px] md:text-[22px]">
-              Structural Health Monitoring System
+              Fire Alarm Integration System
             </h1>
-            <p className="mt-2 text-sm font-medium text-[#9db8d2]">(SHMS)</p>
-            <p className="mt-3 text-sm text-[#b8c7d8]">Bridge Safety Monitoring</p>
+            <p className="mt-2 text-sm font-medium text-[#9db8d2]">(FAIS)</p>
+            <p className="mt-3 text-sm text-[#b8c7d8]">Fire Alarm Monitoring</p>
           </div>
 
           <form autoComplete="off" data-form-type="other" onSubmit={(event) => void submit(event)}>
@@ -176,7 +182,7 @@ export default function SignInPage() {
         </div>
 
         <p className="mt-7 text-center text-[11px] font-medium text-[#89a1b8]/80">
-          © 2026 SHMS-System. All rights reserved.
+          (c) 2026 rscm-fais. All rights reserved.
         </p>
       </div>
     </div>

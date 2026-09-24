@@ -1,4 +1,4 @@
--- SHMS-System - global system settings and unit master data.
+-- rscm-fais - global system settings and unit master data.
 
 CREATE TABLE IF NOT EXISTS measurement_units (
     id INT AUTO_INCREMENT PRIMARY KEY,

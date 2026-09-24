@@ -31,6 +31,6 @@ builder.Services.AddHostedService(serviceProvider => serviceProvider.GetRequired
 var host = builder.Build();
 host.Services.GetRequiredService<ILoggerFactory>()
     .CreateLogger("Worker.Startup")
-    .LogInformation("SHMS Worker starting. LogDirectory={LogDirectory}", logDirectory);
+    .LogInformation("FAIS Worker starting. LogDirectory={LogDirectory}", logDirectory);
 
 host.Run();

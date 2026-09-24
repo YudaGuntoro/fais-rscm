@@ -1,20 +1,14 @@
 "use client";
 
-import { ApexOptions } from "apexcharts";
-import dynamic from "next/dynamic";
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useTheme } from "@/context/ThemeContext";
 import { useToast } from "@/context/ToastContext";
 import { apiGet } from "@/lib/api";
-import { readBridgeLocationSettings } from "./locationSettings";
+import { readMapCoordinateSettings, type MapCoordinateSettings } from "./mapCoordinateSettings";
 import { readMqttConfiguration, type MqttSensorCode } from "./mqttConfiguration";
 
-const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
-
 const SENSOR_ONLINE_WINDOW_MS = 60_000;
-const sensorOrder: MqttSensorCode[] = ["TILT", "VW", "ATRH", "ACC"];
-
-type HealthState = "online" | "offline" | "unknown";
+const sensorOrder: MqttSensorCode[] = ["SD1", "SD2", "HD1", "HD2", "MCP1", "MCP2", "MOD1", "SIR1"];
 
 type SHMSStatus = {
   last_mqtt_at?: string | null;
@@ -67,12 +61,24 @@ type DashboardState = {
   totalBuffered: number;
 };
 
-const timeFormatter = new Intl.DateTimeFormat("en-GB", {
-  hour: "2-digit",
-  minute: "2-digit",
-  second: "2-digit",
-  hour12: false,
-});
+type SummaryCardProps = {
+  accent: "red" | "green" | "blue" | "amber";
+  iconSrc?: string;
+  label: string;
+  note: string;
+  value: React.ReactNode;
+};
+
+type MapAlarm = {
+  code: string;
+  id: number;
+  label: string;
+  location: string;
+  timeStamp: string;
+  x: number;
+  y: number;
+  zone: string;
+};
 
 function parseDate(value?: string | null) {
   if (!value) return null;
@@ -80,45 +86,16 @@ function parseDate(value?: string | null) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function formatTime(value?: string | null) {
+function formatAlarmTime(value?: string | null) {
   const date = parseDate(value);
-  return date ? timeFormatter.format(date) : "--:--:--";
-}
-
-function formatRelative(value?: string | null, now = 0) {
-  const date = parseDate(value);
-  if (!date) return "No data";
-
-  const diffSeconds = Math.max(0, Math.floor((now - date.getTime()) / 1000));
-  if (diffSeconds < 60) return `${diffSeconds}s ago`;
-
-  const diffMinutes = Math.floor(diffSeconds / 60);
-  if (diffMinutes < 60) return `${diffMinutes}m ago`;
-
-  return `${Math.floor(diffMinutes / 60)}h ago`;
-}
-
-function formatDuration(totalSeconds: number) {
-  const seconds = Math.max(0, Math.floor(totalSeconds));
-  if (seconds < 60) return `${seconds}s`;
-
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ${seconds % 60}s`;
-
-  const hours = Math.floor(minutes / 60);
-  return `${hours}h ${minutes % 60}m`;
-}
-
-function isToday(value: string, now: number) {
-  const date = parseDate(value);
-  if (!date) return false;
-
-  const current = new Date(now);
-  return (
-    date.getFullYear() === current.getFullYear() &&
-    date.getMonth() === current.getMonth() &&
-    date.getDate() === current.getDate()
-  );
+  return date
+    ? date.toLocaleTimeString("id-ID", {
+        hour: "2-digit",
+        hour12: false,
+        minute: "2-digit",
+        second: "2-digit",
+      }).replace(/\./g, ":")
+    : "--:--:--";
 }
 
 function isRecent(value: string | null, now: number) {
@@ -131,60 +108,93 @@ function getLogSensor(log: LogBuffer): MqttSensorCode | null {
   return sensorOrder.find((code) => source.includes(code)) ?? null;
 }
 
-function statusClasses(status: HealthState) {
-  if (status === "online") {
-    return "bg-teal-50 text-teal-700 ring-1 ring-teal-600/15 dark:bg-teal-500/10 dark:text-teal-200 dark:ring-teal-400/20";
+function readPayload(log: LogBuffer) {
+  try {
+    const parsed = JSON.parse(log.payload) as Record<string, unknown>;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
   }
-
-  if (status === "offline") {
-    return "bg-red-50 text-red-700 ring-1 ring-red-600/15 dark:bg-red-500/10 dark:text-red-200 dark:ring-red-400/20";
-  }
-
-  return "bg-slate-100 text-slate-600 ring-1 ring-slate-500/15 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-500/25";
 }
 
-function StatusPill({ label, status }: { label: string; status: HealthState }) {
-  return (
-    <span className={`inline-flex w-fit items-center gap-2 rounded-full px-3 py-1 text-xs font-black ${statusClasses(status)}`}>
-      <span className={`size-2 rounded-full ${status === "online" ? "bg-teal-600" : status === "offline" ? "bg-red-600" : "bg-slate-400"}`} />
-      {label}
-    </span>
-  );
+function firstText(payload: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    const value = payload[key];
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return "";
 }
 
-function MetricCard({
-  accent,
-  label,
-  note,
-  status,
-  value,
-}: {
-  accent: string;
-  label: string;
-  note: string;
-  status?: HealthState;
-  value: React.ReactNode;
-}) {
+function firstStatusText(payload: Record<string, unknown>, keys: string[], fallback: string) {
+  return firstText(payload, keys) || fallback;
+}
+
+function createDummyMapAlarm(code: string, id: number, timeStamp: string, mapPoints: MapCoordinateSettings): MapAlarm {
+  const point = mapPoints[code] ?? mapPoints.F2;
+
+  return {
+    code,
+    id,
+    label: point.label,
+    location: point.label,
+    timeStamp,
+    x: point.x,
+    y: point.y,
+    zone: point.label.replace("Zona ", ""),
+  };
+}
+
+function SummaryCard({ accent, iconSrc, label, note, value }: SummaryCardProps) {
+  const accentClass = {
+    amber: "bg-amber-500",
+    blue: "bg-blue-500",
+    green: "bg-emerald-500",
+    red: "bg-red-500",
+  }[accent];
+
   return (
-    <div className="relative overflow-hidden rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/10">
-      <span className={`absolute bottom-0 left-0 top-0 w-1 ${accent}`} />
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">{label}</p>
-        {status ? <StatusPill label={status === "online" ? "Online" : status === "offline" ? "Offline" : "Waiting"} status={status} /> : null}
+    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm shadow-slate-200/60 dark:border-slate-800 dark:bg-slate-950 dark:shadow-black/10 sm:px-4 sm:py-3">
+      <div className="flex min-h-[48px] items-start gap-2.5 sm:min-h-[62px] sm:gap-3">
+        <span className={`mt-1 h-8 w-1 rounded-full sm:mt-1.5 sm:h-9 ${accentClass}`} />
+        <div className="min-w-0">
+          <p className="truncate text-[10px] font-black uppercase tracking-normal text-slate-500 dark:text-slate-400 sm:text-xs">{label}</p>
+          <div className="mt-1 text-xl font-black leading-none tracking-normal text-slate-950 dark:text-white sm:mt-1.5 sm:text-2xl">{value}</div>
+          <p className="mt-1 hidden truncate text-xs font-bold text-slate-500 dark:text-slate-400 sm:block">{note}</p>
+        </div>
+        {iconSrc ? (
+          <span className="ml-auto flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:ring-emerald-500/20 sm:size-11">
+            <Image src={iconSrc} alt="" width={100} height={100} className="h-6 w-6 object-contain sm:h-7 sm:w-7" />
+          </span>
+        ) : null}
       </div>
-      <div className="mt-3 text-2xl font-black tracking-tight text-slate-900 dark:text-white">{value}</div>
-      <p className="mt-2 text-xs font-semibold text-slate-400">{note}</p>
     </div>
   );
 }
 
+function AlarmIcon({ className = "" }: { className?: string }) {
+  return (
+    <span className={`relative flex items-center justify-center rounded-full bg-white ${className}`}>
+      <Image
+        src="/images/dashboard/alarm-icon.png"
+        alt=""
+        width={48}
+        height={48}
+        className="h-[62%] w-[62%] object-contain"
+        priority
+      />
+    </span>
+  );
+}
+
 export default function ProductionDashboard() {
-  const { theme } = useTheme();
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(() => Date.now());
   const [configuration] = useState(() => readMqttConfiguration());
-  const [locationSettings] = useState(() => readBridgeLocationSettings());
+  const [mapPoints, setMapPoints] = useState<MapCoordinateSettings>(() => readMapCoordinateSettings());
   const [dashboard, setDashboard] = useState<DashboardState>({
     broker: null,
     lastMqttAt: null,
@@ -199,8 +209,8 @@ export default function ProductionDashboard() {
 
     try {
       const [statusResult, brokerResult, bufferResult] = await Promise.allSettled([
-        apiGet<SHMSStatus>("/api/shms-system/status"),
-        apiGet<MqttBrokerStatus>("/api/shms-system/mqtt-broker/status"),
+        apiGet<SHMSStatus>("/api/rscm-fais/status"),
+        apiGet<MqttBrokerStatus>("/api/rscm-fais/mqtt-broker/status"),
         apiGet<PagedLogBuffer>("/api/log-buffer?page=1&limit=50"),
       ]);
 
@@ -227,11 +237,16 @@ export default function ProductionDashboard() {
     return () => window.clearInterval(timer);
   }, [load]);
 
-  const brokerStatus: HealthState = dashboard.broker?.online ? "online" : "offline";
-  const mainServerStatus: HealthState = dashboard.mainServer
-    ? dashboard.mainServer.online ? "online" : "offline"
-    : "unknown";
-  const sensorInputStatus: HealthState = isRecent(dashboard.lastMqttAt, now) ? "online" : "offline";
+  useEffect(() => {
+    const syncMapPoints = () => setMapPoints(readMapCoordinateSettings());
+    window.addEventListener("storage", syncMapPoints);
+    window.addEventListener("focus", syncMapPoints);
+    return () => {
+      window.removeEventListener("storage", syncMapPoints);
+      window.removeEventListener("focus", syncMapPoints);
+    };
+  }, []);
+
   const sensorRows = useMemo(() => {
     return sensorOrder.map((code) => {
       const config = configuration.topics.find((topic) => topic.code === code);
@@ -245,282 +260,151 @@ export default function ProductionDashboard() {
         lastAt,
         name: config?.name ?? code,
         online: active && isRecent(lastAt, now),
-        today: logs.filter((log) => isToday(log.time_stamp, now)).length,
         topic: config?.topic ?? "-",
       };
     });
   }, [configuration.topics, dashboard.logs, now]);
 
-  const recentActivities = useMemo(() => {
-    return dashboard.logs.slice(0, 12).map((log) => {
-      const sensor = getLogSensor(log);
-      return {
-        id: log.id,
-        label: sensor ? `${sensor} message received` : `${log.device_id} message received`,
-        payload: log.payload,
-        time: log.time_stamp,
-      };
-    });
-  }, [dashboard.logs]);
+  const troubleCount = sensorRows.filter((sensor) => sensor.active && !sensor.online).length;
+  const supervisoryCount = dashboard.totalBuffered;
+  const normalDeviceCount = sensorRows.filter((sensor) => sensor.active && sensor.online).length;
+  const dummyMapAlarms = useMemo(() => {
+    const timestamp = new Date(now).toISOString();
+    return [createDummyMapAlarm("B", -1, timestamp, mapPoints), createDummyMapAlarm("F", -2, timestamp, mapPoints)];
+  }, [mapPoints, now]);
+  const mapAlarms = dummyMapAlarms;
+  const activeAlarmCount = mapAlarms.length;
+  const deviceCards = useMemo(
+    () =>
+      sensorRows
+        .filter((sensor) => sensor.active)
+        .map((sensor, index) => {
+          const lastLog = dashboard.logs.find((log) => getLogSensor(log) === sensor.code);
+          const payload = lastLog ? readPayload(lastLog) : {};
+          const zoneCode = String.fromCharCode(65 + index);
+          const alarm = mapAlarms.find((item) => item.code[0] === zoneCode || item.zone === zoneCode) ?? null;
+          const fallbackZone = `Zone ${zoneCode}`;
 
-  const chartData = useMemo(() => {
-    const buckets = Array.from({ length: 12 }, (_, index) => {
-      const date = new Date(now);
-      date.setHours(date.getHours() - (11 - index), 0, 0, 0);
-      return {
-        end: date.getTime() + 60 * 60 * 1000,
-        label: `${date.getHours().toString().padStart(2, "0")}:00`,
-        start: date.getTime(),
-      };
-    });
-
-    return {
-      categories: buckets.map((bucket) => bucket.label),
-      incoming: buckets.map((bucket) => dashboard.logs.filter((log) => {
-        const time = parseDate(log.time_stamp)?.getTime() ?? 0;
-        return time >= bucket.start && time < bucket.end;
-      }).length),
-      sent: buckets.map((bucket) => dashboard.logs.filter((log) => {
-        const time = parseDate(log.uploaded_at ?? log.time_stamp)?.getTime() ?? 0;
-        return log.status === "uploaded" && time >= bucket.start && time < bucket.end;
-      }).length),
-    };
-  }, [dashboard.logs, now]);
-
-  const chartOptions = useMemo<ApexOptions>(() => ({
-    chart: {
-      fontFamily: "Outfit, sans-serif",
-      toolbar: { show: false },
-      type: "area",
-    },
-    colors: ["#2563eb", "#0f766e"],
-    dataLabels: { enabled: false },
-    fill: {
-      opacity: 0.18,
-      type: "solid",
-    },
-    grid: {
-      borderColor: theme === "dark" ? "#1e293b" : "#e2e8f0",
-      strokeDashArray: 3,
-    },
-    legend: {
-      fontFamily: "Outfit",
-      horizontalAlign: "left",
-      position: "top",
-    },
-    stroke: {
-      curve: "smooth",
-      width: 3,
-    },
-    tooltip: {
-      y: {
-        formatter: (value: number) => `${value} message`,
-      },
-    },
-    xaxis: {
-      axisBorder: { show: false },
-      axisTicks: { show: false },
-      categories: chartData.categories,
-      labels: {
-        style: {
-          colors: theme === "dark" ? "#cbd5e1" : "#475569",
-          fontFamily: "Outfit, sans-serif",
-        },
-      },
-    },
-    yaxis: {
-      decimalsInFloat: 0,
-      labels: {
-        formatter: (value: number) => `${Math.round(value)}`,
-        style: {
-          colors: theme === "dark" ? "#cbd5e1" : "#475569",
-          fontFamily: "Outfit, sans-serif",
-        },
-      },
-      min: 0,
-    },
-  }), [chartData.categories, theme]);
-
-  const chartSeries = useMemo(() => [
-    { data: chartData.incoming, name: "Data In" },
-    { data: chartData.sent, name: "Uploaded" },
-  ], [chartData.incoming, chartData.sent]);
+          return {
+            ...sensor,
+            alarm,
+            isAlarm: Boolean(alarm),
+            lastAt: lastLog?.time_stamp ?? sensor.lastAt,
+            zone: alarm?.zone ? `Zone ${alarm.zone.replace(/^Zona\s+/i, "")}` : firstStatusText(payload, ["zone", "zona", "area", "map_code", "mapCode"], fallbackZone),
+          };
+        }),
+    [dashboard.logs, mapAlarms, sensorRows],
+  );
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-600">Middleware</p>
-          <h1 className="mt-2 text-2xl font-black text-slate-900 dark:text-white">Dashboard</h1>
-        </div>
-        <button
-          className="h-10 rounded-lg bg-brand-500 px-5 text-sm font-bold text-white transition hover:bg-brand-600 disabled:opacity-60"
-          disabled={loading}
-          onClick={() => void load()}
-          type="button"
-        >
-          {loading ? "Refreshing" : "Refresh"}
-        </button>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          accent="bg-blue-600"
-          label="MQTT Broker"
-          note={dashboard.broker ? `${dashboard.broker.host ?? "localhost"}:${dashboard.broker.port ?? 1883}` : "Checking local broker"}
-          status={brokerStatus}
-          value={dashboard.broker?.online ? "Ready" : "Unavailable"}
-        />
-        <MetricCard
-          accent="bg-slate-500"
-          label={dashboard.mainServer?.server_name ?? "Witon Server"}
-          note={dashboard.mainServer?.endpoint_url || "Endpoint upload belum dikonfigurasi"}
-          status={mainServerStatus}
-          value={mainServerStatus === "online" ? "Reachable" : mainServerStatus === "offline" ? "Unreachable" : "Not Set"}
-        />
-        <MetricCard
-          accent="bg-teal-600"
-          label="Last MQTT Received"
-          note={formatRelative(dashboard.lastMqttAt, now)}
-          status={sensorInputStatus}
-          value={formatTime(dashboard.lastMqttAt)}
-        />
-        <MetricCard
-          accent="bg-amber-500"
-          label="Downtime"
-          note={
-            dashboard.mainServer?.outage_started_at
-              ? `Since ${formatTime(dashboard.mainServer.outage_started_at)}`
-              : "No active outage"
-          }
-          status={mainServerStatus}
-          value={formatDuration(dashboard.mainServer?.downtime_seconds ?? 0)}
-        />
-      </div>
-
-      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/10">
-        <div>
+    <div className="flex flex-col gap-3 xl:h-[calc(100vh-132px)] xl:min-h-[680px] xl:overflow-hidden">
+      <section className="shrink-0 rounded-lg border border-slate-200 bg-white p-3 shadow-sm shadow-slate-200/50 dark:border-slate-800 dark:bg-slate-900">
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Location Overview</p>
-            <h2 className="mt-2 text-lg font-black text-slate-900 dark:text-white">
-              {locationSettings.bridgeName || "Bridge name not set"}
-            </h2>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-600 sm:text-xs">Fire Alarm Monitoring</p>
+            <h1 className="mt-1 text-base font-black text-slate-900 dark:text-white sm:text-lg">RSUPN DR. CIPTO MANGUNKUSUMO</h1>
           </div>
+          <p className="text-xs font-semibold text-slate-400">{loading ? "Refreshing..." : "Live dashboard"}</p>
         </div>
-        <div className="mt-5 grid gap-4 md:grid-cols-3">
-          <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
-            <p className="text-xs font-bold uppercase text-slate-400">Area</p>
-            <p className="mt-2 text-sm font-bold text-slate-800 dark:text-slate-100">{locationSettings.area || "-"}</p>
-          </div>
-          <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
-            <p className="text-xs font-bold uppercase text-slate-400">Bridge Name</p>
-            <p className="mt-2 text-sm font-bold text-slate-800 dark:text-slate-100">{locationSettings.bridgeName || "-"}</p>
-          </div>
-          <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
-            <p className="text-xs font-bold uppercase text-slate-400">Map Location</p>
-            <p className="mt-2 truncate text-sm font-bold text-slate-800 dark:text-slate-100">{locationSettings.mapQuery || "-"}</p>
-          </div>
+
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <SummaryCard accent="red" label="Alarm Aktif" note="Indikasi alarm aktif" value={activeAlarmCount} />
+          <SummaryCard accent="amber" label="Trouble" note="Device perlu pengecekan" value={troubleCount} />
+          <SummaryCard accent="blue" label="Supervisory" note="Data menunggu upload" value={supervisoryCount} />
+          <SummaryCard
+            accent="green"
+            iconSrc="/images/dashboard/done-icon.png"
+            label="Device Normal"
+            note="Perangkat online"
+            value={normalDeviceCount}
+          />
         </div>
       </section>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {sensorRows.map((sensor) => (
-          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900" key={sensor.code}>
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xl font-black text-slate-900 dark:text-white">{sensor.code}</p>
-                <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">{sensor.name}</p>
+      <section className="grid min-h-0 flex-1 gap-3 overflow-hidden rounded-lg border border-slate-200 bg-white p-3 shadow-sm shadow-slate-200/50 dark:border-slate-800 dark:bg-slate-900 xl:grid-cols-2">
+        <aside className="flex min-h-0 flex-col gap-3 rounded-lg border border-slate-200 bg-white p-2.5 shadow-sm shadow-slate-200/60 dark:border-slate-800 dark:bg-slate-950 dark:shadow-black/10 sm:p-3">
+          <div className="flex items-end justify-between gap-3 px-0.5">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-brand-600 sm:text-xs">Device Monitoring</p>
+              <h2 className="mt-1 text-sm font-black text-slate-950 dark:text-white sm:text-base">{deviceCards.length} Zona Terpantau</h2>
+            </div>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-black text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 sm:px-3 sm:text-xs">
+              Live
+            </span>
+          </div>
+
+          <div className="grid min-h-0 grid-cols-2 gap-2 overflow-y-auto sm:gap-3 xl:grid-cols-4">
+            {deviceCards.map((device) => {
+              const statusStyle = device.isAlarm
+                ? "border-red-200 bg-white shadow-red-100/60 dark:border-red-500/40 dark:bg-slate-950"
+                : device.online
+                  ? "border-emerald-200 bg-white shadow-emerald-100/60 dark:border-emerald-500/40 dark:bg-slate-950"
+                  : "border-emerald-200 bg-white shadow-emerald-100/60 dark:border-emerald-500/40 dark:bg-slate-950";
+              const title = device.isAlarm ? "ALARM" : "SAFE";
+
+              return (
+              <div
+                className={`flex min-h-[132px] flex-col items-center justify-center rounded-lg border p-2.5 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:aspect-[1.05/1] sm:min-h-[126px] sm:p-3 ${statusStyle}`}
+                key={device.code}
+              >
+                {device.isAlarm ? (
+                  <AlarmIcon className="size-8 sm:size-10" />
+                ) : (
+                  <Image src="/images/dashboard/done-icon.png" alt="" width={100} height={100} className="h-10 w-10 object-contain sm:h-12 sm:w-12" />
+                )}
+                <h3 className="mt-1.5 text-base font-black uppercase leading-none tracking-normal text-slate-950 dark:text-white sm:mt-2 sm:text-xl">{device.zone}</h3>
+                <p className={`mt-1 text-base font-black uppercase leading-none sm:text-xl ${device.isAlarm ? "text-red-600" : "text-[#7ac943]"}`}>
+                  {title}
+                </p>
+                {device.isAlarm ? (
+                  <p className="mt-1 text-[11px] font-black leading-none text-slate-950 dark:text-white sm:mt-1.5 sm:text-xs">{formatAlarmTime(device.alarm?.timeStamp)}</p>
+                ) : null}
+
+                {device.isAlarm ? (
+                  <button
+                    className="mt-2 inline-flex min-h-7 w-full items-center justify-center rounded-md bg-red-600 px-2 text-[11px] font-black text-white shadow-sm shadow-red-500/20 transition hover:bg-red-700 sm:min-h-8 sm:px-3 sm:text-xs"
+                    type="button"
+                  >
+                    Acknowledge
+                  </button>
+                ) : null}
               </div>
-              <StatusPill
-                label={!sensor.active ? "Inactive" : sensor.online ? "Online" : "Offline"}
-                status={!sensor.active ? "unknown" : sensor.online ? "online" : "offline"}
+              );
+            })}
+          </div>
+        </aside>
+
+        <div className="flex min-h-0 flex-col justify-center rounded-lg border border-slate-200 bg-white p-1.5 shadow-sm shadow-slate-200/60 dark:border-slate-800 dark:bg-slate-950 dark:shadow-black/10">
+            <div className="flex min-h-[260px] flex-1 items-center justify-center overflow-hidden rounded-md bg-white sm:min-h-[420px]">
+            <div className="relative w-full">
+              <Image
+                alt="Denah RSUPN Dr. Cipto Mangunkusumo"
+                className="h-auto w-full select-none"
+                height={1024}
+                priority
+                sizes="(min-width: 1280px) 1100px, 100vw"
+                src="/images/dashboard/rscm-denah-v2.png"
+                width={1536}
               />
-            </div>
-            <div className="mt-5 space-y-3 text-sm">
-              <div>
-                <p className="text-xs font-bold uppercase text-slate-400">Topic</p>
-                <p className="mt-1 truncate font-bold text-slate-700 dark:text-slate-200">{sensor.topic}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-xs font-bold uppercase text-slate-400">Last Received</p>
-                  <p className="mt-1 font-bold text-slate-700 dark:text-slate-200">{formatRelative(sensor.lastAt, now)}</p>
+              {mapAlarms.map((alarm, index) => (
+                <div
+                  className="absolute -translate-x-1/2 -translate-y-1/2"
+                  key={`${alarm.id}-${index}`}
+                  style={{ left: `${alarm.x}%`, top: `${alarm.y}%` }}
+                >
+                  <div className="relative flex flex-col items-center">
+                    <div className="rounded bg-red-600 px-2 py-1.5 text-center text-[9px] font-black leading-tight text-white shadow-lg shadow-red-900/30 sm:rounded-md sm:px-3 sm:py-2 sm:text-xs">
+                      ALARM
+                      <br />
+                      {alarm.label}
+                    </div>
+                    <span className="h-0 w-0 border-x-[6px] border-t-[8px] border-x-transparent border-t-red-600 sm:border-x-[8px] sm:border-t-[10px]" />
+                    <AlarmIcon className="mt-0.5 size-5 ring-2 ring-white sm:mt-1 sm:size-8 sm:ring-4" />
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs font-bold uppercase text-slate-400">Today</p>
-                  <p className="mt-1 font-bold text-slate-700 dark:text-slate-200">{sensor.today} msg</p>
-                </div>
-              </div>
-            </div>
-          </section>
-        ))}
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_430px]">
-        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Upload Health</h2>
-            <p className="mt-1 text-xs font-semibold text-slate-400">Data masuk vs data terkirim per jam.</p>
-          </div>
-          <div className="mt-5 max-w-full overflow-x-auto">
-            <div className="min-w-[640px]">
-              <ReactApexChart height={290} options={chartOptions} series={chartSeries} type="area" />
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Log Buffer Summary</h2>
-          <div className="mt-5 grid grid-cols-2 gap-3">
-            <MetricCard accent="bg-amber-500" label="Redis Buffer" note="Data menunggu upload" value={dashboard.totalBuffered} />
-            <MetricCard accent="bg-red-600" label="DB Fallback" note="Redis dipindah ke DB" value={dashboard.mainServer?.db_spillover_count ?? 0} />
-            <MetricCard accent="bg-teal-600" label="Last Upload Success" note={formatRelative(dashboard.mainServer?.last_success_at, now)} value={formatTime(dashboard.mainServer?.last_success_at)} />
-            <MetricCard accent="bg-slate-500" label="Last Upload Failed" note={dashboard.mainServer?.last_error || "No error"} value={formatTime(dashboard.mainServer?.last_failure_at)} />
-          </div>
-          <div className="mt-4 rounded-lg border border-slate-100 p-4 dark:border-slate-800">
-            <p className="text-xs font-bold uppercase text-slate-400">Oldest Pending Data</p>
-            <p className="mt-2 text-sm font-bold text-slate-700 dark:text-slate-200">
-              {dashboard.logs.length ? formatRelative(dashboard.logs[dashboard.logs.length - 1].time_stamp, now) : "No pending data"}
-            </p>
-          </div>
-        </section>
-      </div>
-
-      <section className="rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="border-b border-slate-100 px-5 py-4 dark:border-slate-800">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Recent Activity</h2>
-            <p className="mt-1 text-xs font-semibold text-slate-400">Latest device messages captured by middleware.</p>
-          </div>
-        </div>
-        <div className="overflow-x-auto p-5">
-          <table className="w-full min-w-[820px] border-separate border-spacing-0 text-left text-sm">
-            <thead className="bg-transparent text-xs uppercase text-white">
-              <tr>
-                <th className="w-48 rounded-l-lg bg-brand-500 px-5 py-3">Time</th>
-                <th className="w-56 bg-brand-500 px-4 py-3">Activity</th>
-                <th className="rounded-r-lg bg-brand-500 px-4 py-3">Payload</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentActivities.map((activity) => (
-                <tr key={activity.id}>
-                  <td className="border-b border-slate-100 px-5 py-4 font-bold text-slate-700 dark:border-slate-800 dark:text-slate-200">
-                    {formatTime(activity.time)}
-                  </td>
-                  <td className="border-b border-slate-100 px-4 py-4 font-semibold text-slate-600 dark:border-slate-800 dark:text-slate-300">
-                    {activity.label}
-                  </td>
-                  <td className="border-b border-slate-100 px-4 py-4 text-slate-500 dark:border-slate-800 dark:text-slate-400">
-                    <span className="line-clamp-1 break-all">{activity.payload}</span>
-                  </td>
-                </tr>
               ))}
-            </tbody>
-          </table>
-          {!recentActivities.length ? (
-            <p className="py-10 text-center text-sm font-semibold text-slate-400">No device activity yet.</p>
-          ) : null}
+            </div>
+            </div>
         </div>
       </section>
     </div>

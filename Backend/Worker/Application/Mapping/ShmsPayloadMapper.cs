@@ -143,7 +143,7 @@ public static class ShmsPayloadMapper
     {
         var machineName = SignalHelper.TopicToMachineName(topic);
         return string.IsNullOrWhiteSpace(machineName)
-            ? $"SHMS-{sensorCode}-01"
+            ? $"FAIS-{sensorCode}-01"
             : machineName;
     }
 

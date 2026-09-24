@@ -2,21 +2,34 @@
 
 import { useSidebar } from "@/context/SidebarContext";
 import { AuthGuard } from "@/lib/AuthGuard";
+import { getStoredUser } from "@/lib/auth";
 import AppHeader from "@/layout/AppHeader";
 import AppSidebar from "@/layout/AppSidebar";
 import Backdrop from "@/layout/Backdrop";
-import type { ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, type ReactNode } from "react";
 
 const appVersion = "v.13.08.26";
+const viewerAllowedPaths = new Set(["/", "/overview", "/location", "/log-alarm", "/settings"]);
 
 export default function AdminShell({ children }: { children: ReactNode }) {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
+  const pathname = usePathname();
+  const router = useRouter();
 
   const mainContentMargin = isMobileOpen
     ? "ml-0"
     : isExpanded || isHovered
     ? "lg:ml-[290px]"
     : "lg:ml-[90px]";
+
+  useEffect(() => {
+    const storedUser = getStoredUser();
+
+    if (storedUser?.role === "VIEWER" && !viewerAllowedPaths.has(pathname)) {
+      router.replace("/");
+    }
+  }, [pathname, router]);
 
   return (
     <AuthGuard>

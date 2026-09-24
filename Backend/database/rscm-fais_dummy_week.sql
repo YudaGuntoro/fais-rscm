@@ -1,7 +1,7 @@
--- SHMS dummy data for one week around 2026-09-10.
+-- FAIS dummy data for one week around 2026-09-10.
 -- Range: 2026-09-07 through 2026-09-13.
 
-USE `bajatitian_shms`;
+USE `rscm_fais`;
 
 INSERT INTO sensor_readings
     (sensor_channel_id, measured_at, numeric_value, quality_code, raw_payload)
@@ -65,11 +65,11 @@ SELECT
     devices.id AS sensor_device_id,
     devices.device_code AS device_id,
     CASE types.sensor_code
-        WHEN 'TILT' THEN 'shms/tilt'
-        WHEN 'VW' THEN 'shms/vw'
-        WHEN 'ATRH' THEN 'shms/atrh'
-        WHEN 'ACC' THEN 'shms/acc'
-        ELSE 'shms/unknown'
+        WHEN 'TILT' THEN 'fais/tilt'
+        WHEN 'VW' THEN 'fais/vw'
+        WHEN 'ATRH' THEN 'fais/atrh'
+        WHEN 'ACC' THEN 'fais/acc'
+        ELSE 'fais/unknown'
     END AS topic,
     JSON_OBJECT(
         'source', 'dummy-week',
@@ -125,11 +125,11 @@ WHERE NOT EXISTS (
     WHERE existing.device_id = devices.device_code
       AND existing.time_stamp = TIMESTAMP(days.measured_date, slots.measured_time)
       AND existing.topic = CASE types.sensor_code
-          WHEN 'TILT' THEN 'shms/tilt'
-          WHEN 'VW' THEN 'shms/vw'
-          WHEN 'ATRH' THEN 'shms/atrh'
-          WHEN 'ACC' THEN 'shms/acc'
-          ELSE 'shms/unknown'
+          WHEN 'TILT' THEN 'fais/tilt'
+          WHEN 'VW' THEN 'fais/vw'
+          WHEN 'ATRH' THEN 'fais/atrh'
+          WHEN 'ACC' THEN 'fais/acc'
+          ELSE 'fais/unknown'
       END
 );
 

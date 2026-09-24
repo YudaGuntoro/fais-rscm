@@ -209,7 +209,7 @@ export default function MqttConfigurationPage() {
                         className={tableInputClass}
                         disabled={!sensor.enabled}
                         onChange={(event) => updateTopic(sensor.code, { topic: event.target.value })}
-                        placeholder={`shms/${sensor.code.toLowerCase()}`}
+                        placeholder={`fais/${sensor.code.toLowerCase()}`}
                         value={sensor.topic}
                       />
                     </td>

@@ -22,7 +22,7 @@ public sealed class MqttClientService : BackgroundService, IMqttClientService, I
 
 	private const string DefaultClientId = "Worker";
 
-	private const string DefaultTopic = "shms_mqtt";
+	private const string DefaultTopic = "fais_mqtt";
 
 	private const int DefaultPort = 1883;
 
@@ -287,7 +287,7 @@ public sealed class MqttClientService : BackgroundService, IMqttClientService, I
 		}
 		catch (Exception exception)
 		{
-			_logger.LogError(exception, "[MQTT] Failed to save message to SHMS storage. Topic={Topic}", topic);
+			_logger.LogError(exception, "[MQTT] Failed to save message to FAIS storage. Topic={Topic}", topic);
 		}
 	}
 
@@ -357,7 +357,7 @@ public sealed class MqttClientService : BackgroundService, IMqttClientService, I
 		IReadOnlyList<string> readOnlyList = cfg.ReadList("Topics", "MQTT");
 		if (readOnlyList.Count == 0)
 		{
-			string item = ReadSetting(cfg, "MQTT", "Topic", "MQTT__Topic", "MQTT_TOPIC") ?? "shms_mqtt";
+			string item = ReadSetting(cfg, "MQTT", "Topic", "MQTT__Topic", "MQTT_TOPIC") ?? "fais_mqtt";
 			readOnlyList = new[] { item };
 		}
 		return (from topic in readOnlyList

@@ -2,21 +2,29 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import SHMSBrand from "@/components/brand/SHMSBrand";
+import FAISBrand from "@/components/brand/FAISBrand";
 import { useSidebar } from "../context/SidebarContext";
+import { getStoredUser } from "@/lib/auth";
 import {
   ChevronDownIcon,
   HorizontaLDots,
 } from "../icons/index";
 import { NavItem, navItems } from "./navItems";
 
+const viewerAllowedPaths = new Set(["/", "/overview", "/location", "/log-alarm", "/settings"]);
+
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const pathname = usePathname();
+  const storedUser = getStoredUser();
+  const visibleNavItems =
+    storedUser?.role === "VIEWER"
+      ? navItems.filter((nav) => nav.path && viewerAllowedPaths.has(nav.path))
+      : navItems;
   const isActive = (path: string) => path === pathname;
   const canShowSubmenu = isExpanded || isHovered || isMobileOpen;
   const activeSubmenuName =
-    navItems.find((nav) =>
+    visibleNavItems.find((nav) =>
       nav.subItems?.some((subItem) => subItem.path === pathname)
     )?.name ?? null;
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(
@@ -138,9 +146,9 @@ const AppSidebar: React.FC = () => {
         <Link href="/" className="sidebar-brand-link flex items-center gap-3">
           <span className="sidebar-brand-motion flex items-center gap-4">
             {isExpanded || isHovered || isMobileOpen ? (
-              <SHMSBrand compact />
+              <FAISBrand compact />
             ) : (
-              <SHMSBrand compact showTitle={false} />
+              <FAISBrand compact showTitle={false} />
             )}
           </span>
         </Link>
@@ -161,7 +169,7 @@ const AppSidebar: React.FC = () => {
                   <HorizontaLDots />
                 )}
               </h2>
-              {renderMenuItems(navItems)}
+              {renderMenuItems(visibleNavItems)}
             </div>
           </div>
         </nav>

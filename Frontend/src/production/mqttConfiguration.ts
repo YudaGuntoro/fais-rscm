@@ -1,6 +1,6 @@
 import { apiGet, apiRequest } from "@/lib/api";
 
-export type MqttSensorCode = "TILT" | "VW" | "ATRH" | "ACC";
+export type MqttSensorCode = "SD1" | "SD2" | "HD1" | "HD2" | "MCP1" | "MCP2" | "MOD1" | "SIR1";
 
 export type MqttSensorTopic = {
   code: MqttSensorCode;
@@ -37,12 +37,16 @@ type ApiMqttConfiguration = {
 export const defaultMqttConfiguration: MqttConfiguration = {
   brokerHost: "localhost",
   brokerPort: "1883",
-  clientId: "SHMSClient",
+  clientId: "RSCMFAISClient",
   topics: [
-    { code: "TILT", enabled: true, name: "Tilt Sensor", qos: "1", topic: "shms/tilt" },
-    { code: "VW", enabled: true, name: "Vibrating Wire Sensor", qos: "1", topic: "shms/vw" },
-    { code: "ATRH", enabled: true, name: "Air Temperature & RH Sensor", qos: "1", topic: "shms/atrh" },
-    { code: "ACC", enabled: true, name: "Accelerometer Sensor", qos: "1", topic: "shms/acc" },
+    { code: "SD1", enabled: true, name: "Smoke Detector F2", qos: "1", topic: "fais/fire/zona-f/f2/smoke-detector-01" },
+    { code: "SD2", enabled: true, name: "Smoke Detector A1", qos: "1", topic: "fais/fire/zona-a/a1/smoke-detector-02" },
+    { code: "HD1", enabled: true, name: "Heat Detector D2", qos: "1", topic: "fais/fire/zona-d/d2/heat-detector-01" },
+    { code: "HD2", enabled: true, name: "Heat Detector H1", qos: "1", topic: "fais/fire/zona-h/h1/heat-detector-02" },
+    { code: "MCP1", enabled: true, name: "Manual Call Point A1", qos: "1", topic: "fais/fire/zona-a/a1/manual-call-point-01" },
+    { code: "MCP2", enabled: true, name: "Manual Call Point F2", qos: "1", topic: "fais/fire/zona-f/f2/manual-call-point-02" },
+    { code: "MOD1", enabled: true, name: "Input Module G3", qos: "1", topic: "fais/fire/zona-g/g3/input-module-01" },
+    { code: "SIR1", enabled: true, name: "Sounder Strobe B", qos: "1", topic: "fais/fire/zona-b/sounder-strobe-01" },
   ],
 };
 
@@ -114,7 +118,7 @@ export function saveMqttConfiguration(configuration: MqttConfiguration) {
 
 export async function fetchMqttConfiguration() {
   try {
-    const configuration = fromApiConfiguration(await apiGet<ApiMqttConfiguration>("/api/shms-system/mqtt-configuration"));
+    const configuration = fromApiConfiguration(await apiGet<ApiMqttConfiguration>("/api/rscm-fais/mqtt-configuration"));
     saveMqttConfiguration(configuration);
     return configuration;
   } catch {
@@ -123,7 +127,7 @@ export async function fetchMqttConfiguration() {
 }
 
 export async function updateMqttConfiguration(configuration: MqttConfiguration) {
-  const updated = fromApiConfiguration(await apiRequest<ApiMqttConfiguration>("/api/shms-system/mqtt-configuration", {
+  const updated = fromApiConfiguration(await apiRequest<ApiMqttConfiguration>("/api/rscm-fais/mqtt-configuration", {
     body: JSON.stringify(toApiConfiguration(configuration)),
     method: "PUT",
   }));

@@ -216,7 +216,7 @@ public sealed class SensorReadingWriterService : ISensorReadingWriterService
             ) ENGINE=InnoDB;
 
             INSERT INTO shms_sites (id, site_code, site_name, is_active)
-            VALUES (1, 'BTU-SITE-001', 'Baja Titian Utama Monitoring Site', 1)
+            VALUES (1, 'BTU-SITE-001', 'RSCM Monitoring Site', 1)
             ON DUPLICATE KEY UPDATE site_name = VALUES(site_name), is_active = VALUES(is_active);
 
             CREATE TABLE IF NOT EXISTS structural_assets (

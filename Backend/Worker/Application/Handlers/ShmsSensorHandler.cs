@@ -20,7 +20,7 @@ public sealed class ShmsSensorHandler : IShmsSensorHandler
     }
 
     public bool CanHandle(string topic) =>
-        !string.IsNullOrWhiteSpace(topic) && topic.Contains("shms", StringComparison.OrdinalIgnoreCase);
+        !string.IsNullOrWhiteSpace(topic) && topic.Contains("fais", StringComparison.OrdinalIgnoreCase);
 
     public async Task InsertAsync(string topic, string payload, CancellationToken cancellationToken = default)
     {
@@ -29,7 +29,7 @@ public sealed class ShmsSensorHandler : IShmsSensorHandler
             var reading = ShmsPayloadMapper.ToSensorReading(topic, payload);
             var insertedId = await _readingWriterService.InsertAsync(reading, cancellationToken);
             _logger.LogInformation(
-                "[SHMS] Inserted reading Id={Id} Device={Device} Channel={Channel} Value={Value} Topic={Topic}",
+                "[FAIS] Inserted reading Id={Id} Device={Device} Channel={Channel} Value={Value} Topic={Topic}",
                 insertedId,
                 reading.DeviceCode,
                 reading.ChannelCode,

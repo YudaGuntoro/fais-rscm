@@ -8,13 +8,13 @@ using Web.API.Persistence.Services.Production;
 namespace Web.API.Controllers;
 
 [ApiController]
-[Route("api/shms-system")]
-public class SHMSSystemController : ApiControllerBase
+[Route("api/rscm-fais")]
+public class RSCMFAISController : ApiControllerBase
 {
     private readonly AppDbContext _db;
     private readonly IMqttConfigurationService _mqttConfigurationService;
 
-    public SHMSSystemController(
+    public RSCMFAISController(
         AppDbContext db,
         IMqttConfigurationService mqttConfigurationService)
     {

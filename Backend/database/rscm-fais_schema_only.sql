@@ -1,11 +1,11 @@
--- SHMS-System normalized schema.
+-- rscm-fais normalized schema.
 -- Target: MySQL 8.0+
 
-CREATE DATABASE IF NOT EXISTS `bajatitian_shms`
+CREATE DATABASE IF NOT EXISTS `rscm_fais`
     CHARACTER SET utf8mb4
     COLLATE utf8mb4_unicode_ci;
 
-USE `bajatitian_shms`;
+USE `rscm_fais`;
 
 CREATE TABLE IF NOT EXISTS roles (
     id INT AUTO_INCREMENT PRIMARY KEY,

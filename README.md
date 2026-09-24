@@ -1,11 +1,11 @@
-# SHMS-System
+# rscm-fais
 
-Structural Health Monitoring System for **PT. Baja Titian Utama**.
+Fire Alarm Integration System for **RSCM**.
 
 ## Included modules
 
 - JWT login with the existing authentication flow
-- SHMS dashboard
+- FAIS dashboard
 - MQTT configuration
 - Location monitoring
 - Sensor log buffer
@@ -29,17 +29,17 @@ Password: root_native
 MySQL 8 is required. From the repository root, run:
 
 ```powershell
-mysql -u root -p -e "source Backend/database/bajatitian-shms.sql"
+mysql -u root -p -e "source Backend/database/rscm-fais.sql"
 ```
 
-The script creates `bajatitian_shms`, the login user, SHMS tables, and starter records.
+The script creates `rscm_fais`, the login user, FAIS tables, and starter records.
 
 ## Run locally
 
 API:
 
 ```powershell
-$env:ConnectionStrings__DefaultConnection="Server=127.0.0.1;Port=3306;User ID=root;Password=YOUR_PASSWORD;Database=bajatitian-shms;SslMode=None;AllowPublicKeyRetrieval=True;"
+$env:ConnectionStrings__DefaultConnection="Server=127.0.0.1;Port=3306;User ID=root;Password=YOUR_PASSWORD;Database=rscm_fais;SslMode=None;AllowPublicKeyRetrieval=True;"
 dotnet run --project Backend\Web.API\Web.API.csproj
 ```
 
@@ -59,7 +59,7 @@ Open `http://localhost:3000`.
 Core endpoints:
 
 - `POST /api/auth/login`
-- `GET /api/shms-system/status`
-- `GET|PUT /api/shms-system/mqtt-configuration`
-- `GET /api/shms-system/log-buffer`
-- `GET|PUT /api/shms-system/settings`
+- `GET /api/rscm-fais/status`
+- `GET|PUT /api/rscm-fais/mqtt-configuration`
+- `GET /api/rscm-fais/log-buffer`
+- `GET|PUT /api/rscm-fais/settings`

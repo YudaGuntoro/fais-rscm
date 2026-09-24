@@ -8,10 +8,10 @@ public sealed class MqttConfigurationService : IMqttConfigurationService
 {
     private static readonly MqttSensorTopicConfig[] DefaultTopics =
     [
-        new() { Code = "TILT", Name = "Tilt Sensor", Topic = "shms/tilt", Qos = 1, Enabled = true },
-        new() { Code = "VW", Name = "Vibrating Wire Sensor", Topic = "shms/vw", Qos = 1, Enabled = true },
-        new() { Code = "ATRH", Name = "Air Temperature & RH Sensor", Topic = "shms/atrh", Qos = 1, Enabled = true },
-        new() { Code = "ACC", Name = "Accelerometer Sensor", Topic = "shms/acc", Qos = 1, Enabled = true }
+        new() { Code = "TILT", Name = "Tilt Sensor", Topic = "fais/tilt", Qos = 1, Enabled = true },
+        new() { Code = "VW", Name = "Vibrating Wire Sensor", Topic = "fais/vw", Qos = 1, Enabled = true },
+        new() { Code = "ATRH", Name = "Air Temperature & RH Sensor", Topic = "fais/atrh", Qos = 1, Enabled = true },
+        new() { Code = "ACC", Name = "Accelerometer Sensor", Topic = "fais/acc", Qos = 1, Enabled = true }
     ];
 
     private readonly IMqttConfigurationRepository _repository;
@@ -56,7 +56,7 @@ public sealed class MqttConfigurationService : IMqttConfigurationService
         {
             BrokerHost = "localhost",
             BrokerPort = 1883.ToString(CultureInfo.InvariantCulture),
-            ClientId = "SHMSClient",
+            ClientId = "RSCMFAISClient",
             Topics = topics.ToList()
         };
 

@@ -7,14 +7,14 @@ import { ToastProvider } from '@/context/ToastContext';
 
 export const metadata: Metadata = {
   title: {
-    default: "STRUCTURAL HEALTH MONITORING SYSTEM",
-    template: "%s | STRUCTURAL HEALTH MONITORING SYSTEM",
+    default: "FIRE ALARM INTEGRATION SYSTEM",
+    template: "%s | FIRE ALARM INTEGRATION SYSTEM",
   },
-  description: "STRUCTURAL HEALTH MONITORING SYSTEM for PT. Baja Titian Utama",
+  description: "FIRE ALARM INTEGRATION SYSTEM for RSCM",
   icons: {
-    apple: "/shms-icon.svg?v=btu-shms-2",
-    icon: "/shms-icon.svg?v=btu-shms-2",
-    shortcut: "/shms-icon.svg?v=btu-shms-2",
+    apple: "/rscm-fais-icon.svg?v=rscm-fais-1",
+    icon: "/rscm-fais-icon.svg?v=rscm-fais-1",
+    shortcut: "/rscm-fais-icon.svg?v=rscm-fais-1",
   },
 };
 

@@ -6,7 +6,7 @@
     <RootNamespace>Worker</RootNamespace>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>dotnet-SHMSWorker-20260909</UserSecretsId>
+    <UserSecretsId>dotnet-RSCMFAISWorker-20260909</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

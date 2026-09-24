@@ -32,6 +32,27 @@ const SettingsIcon = () => (
   </svg>
 );
 
+const AlarmLogIcon = () => (
+  <svg
+    aria-hidden="true"
+    fill="none"
+    height="22"
+    viewBox="0 0 24 24"
+    width="22"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M12 4.75c-3.04 0-5.5 2.46-5.5 5.5v3.15L5 16.25h14l-1.5-2.85v-3.15c0-3.04-2.46-5.5-5.5-5.5Z"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+    />
+    <path d="M9.75 18.25a2.25 2.25 0 0 0 4.5 0" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+    <path d="M4.75 5.25 3 3.5M19.25 5.25 21 3.5" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+  </svg>
+);
+
 export type NavSubItem = {
   name: string;
   path: string;
@@ -53,6 +74,11 @@ export const navItems: NavItem[] = [
     path: "/",
   },
   {
+    icon: <TaskIcon />,
+    name: "Overview",
+    path: "/overview",
+  },
+  {
     icon: <BoltIcon />,
     name: "Mqtt Configuration",
     path: "/mqtt-configuration",
@@ -68,8 +94,13 @@ export const navItems: NavItem[] = [
     path: "/log-buffer",
   },
   {
+    icon: <AlarmLogIcon />,
+    name: "Log Alarm",
+    path: "/log-alarm",
+  },
+  {
     icon: <SettingsIcon />,
-    name: "Setting",
+    name: "Info",
     path: "/settings",
   },
 ];

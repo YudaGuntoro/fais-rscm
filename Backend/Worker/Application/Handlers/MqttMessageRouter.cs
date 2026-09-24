@@ -185,7 +185,7 @@ public sealed class MqttMessageRouter : IMqttMessageHandler
         }
         catch (Exception ex) when (ex is FormatException or JsonException)
         {
-            _logger.LogWarning(ex, "[SHMS] MQTT payload was logged but not inserted as sensor reading. Topic={Topic}", topic);
+            _logger.LogWarning(ex, "[FAIS] MQTT payload was logged but not inserted as sensor reading. Topic={Topic}", topic);
         }
     }
 

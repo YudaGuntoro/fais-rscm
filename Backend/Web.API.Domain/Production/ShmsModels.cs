@@ -237,7 +237,7 @@ public class MqttBrokerConfig
     public string ConfigName { get; set; } = "default";
     public string Host { get; set; } = "localhost";
     public int Port { get; set; } = 1883;
-    public string ClientId { get; set; } = "SHMSClient";
+    public string ClientId { get; set; } = "RSCMFAISClient";
     public string? Username { get; set; }
     public string? PasswordSecretName { get; set; }
     public bool UseTls { get; set; }
@@ -299,7 +299,7 @@ public class MqttConfigurationResponse
     public string BrokerPort { get; set; } = "1883";
 
     [JsonPropertyName("client_id")]
-    public string ClientId { get; set; } = "SHMSClient";
+    public string ClientId { get; set; } = "RSCMFAISClient";
 
     [JsonPropertyName("topics")]
     public List<MqttSensorTopicConfig> Topics { get; set; } = [];
