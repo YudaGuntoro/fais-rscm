@@ -59,7 +59,7 @@ Initial clone:
 ```bash
 sudo mkdir -p /var/www/rscm-fais
 sudo chown -R "$USER":"$USER" /var/www/rscm-fais
-git clone https://github.com/YudaGuntoro/rscm-fais.git /var/www/rscm-fais
+git clone https://github.com/YudaGuntoro/fais-rscm.git /var/www/rscm-fais
 cd /var/www/rscm-fais
 cp .env.example .env
 nano .env
@@ -69,11 +69,11 @@ Required VPS `.env` values:
 
 ```env
 FRONTEND_ORIGIN=https://rscm-fais.your-domain.com
-FRONTEND_ORIGIN_ALT=http://127.0.0.1:8091
+FRONTEND_ORIGIN_ALT=http://127.0.0.1:8095
 NEXT_PUBLIC_API_BASE_URL=
 SERVER_API_BASE_URL=http://api:8080
-FRONTEND_HOST_PORT=8091
-API_HOST_PORT=5274
+FRONTEND_HOST_PORT=8095
+API_HOST_PORT=5278
 MYSQL_CONNECTION_STRING=Server=host.docker.internal;Port=3306;User ID=root;Password=YOUR_PASSWORD;Database=rscm_fais;SslMode=None;AllowPublicKeyRetrieval=True;
 JWT_SIGNING_KEY=replace-with-a-long-random-rscm-fais-secret
 SWAGGER_ENABLED=false

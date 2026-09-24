@@ -273,8 +273,10 @@ export default function OverviewPage() {
       },
     },
     yaxis: {
-      allowDecimals: false,
-      labels: { style: { colors: ["#64748b"], fontSize: "12px" } },
+      labels: {
+        formatter: (value) => Math.round(value).toString(),
+        style: { colors: ["#64748b"], fontSize: "12px" },
+      },
     },
   };
 

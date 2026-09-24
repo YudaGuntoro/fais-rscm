@@ -20,10 +20,14 @@ const tableInputClass = "h-11 w-full min-w-0 rounded-lg border border-slate-300 
 const labelClass = "text-xs font-bold uppercase text-slate-600 dark:text-slate-300";
 
 const sensorDescriptions: Record<MqttSensorCode, string> = {
-  ACC: "Getaran dan akselerasi struktur.",
-  ATRH: "Air temperature dan relative humidity.",
-  TILT: "Kemiringan struktur dari tilt sensor.",
-  VW: "Pembacaan vibrating wire sensor.",
+  HD1: "Heat detector area zona D.",
+  HD2: "Heat detector area zona H.",
+  MCP1: "Manual call point area zona A.",
+  MCP2: "Manual call point area zona F.",
+  MOD1: "Input module area zona G.",
+  SD1: "Smoke detector area zona F.",
+  SD2: "Smoke detector area zona A.",
+  SIR1: "Sounder strobe area zona B.",
 };
 
 export default function MqttConfigurationPage() {

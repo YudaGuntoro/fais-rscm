@@ -20,9 +20,9 @@ services:
       Jwt__ExpiresHours: ${JWT_EXPIRES_HOURS:-8}
       Swagger__Enabled: ${SWAGGER_ENABLED:-false}
       Cors__AllowedOrigins__0: ${FRONTEND_ORIGIN}
-      Cors__AllowedOrigins__1: ${FRONTEND_ORIGIN_ALT:-http://127.0.0.1:8091}
+      Cors__AllowedOrigins__1: ${FRONTEND_ORIGIN_ALT:-http://127.0.0.1:8095}
     ports:
-      - "${API_HOST_PORT:-5274}:8080"
+      - "${API_HOST_PORT:-5278}:8080"
     networks:
       - rscm-fais-net
 
@@ -42,7 +42,7 @@ services:
       NEXT_PUBLIC_API_BASE_URL: ""
       SERVER_API_BASE_URL: ${SERVER_API_BASE_URL:-http://api:8080}
     ports:
-      - "${FRONTEND_HOST_PORT:-8091}:3000"
+      - "${FRONTEND_HOST_PORT:-8095}:3000"
     networks:
       - rscm-fais-net
 
