@@ -69,10 +69,10 @@ Required VPS `.env` values:
 
 ```env
 FRONTEND_ORIGIN=https://fais.nusakaryadigital.com
-FRONTEND_ORIGIN_ALT=http://127.0.0.1:8095
+FRONTEND_ORIGIN_ALT=http://127.0.0.1:8097
 NEXT_PUBLIC_API_BASE_URL=
 SERVER_API_BASE_URL=http://api:8080
-FRONTEND_HOST_PORT=8095
+FRONTEND_HOST_PORT=8097
 API_HOST_PORT=5278
 MYSQL_CONNECTION_STRING=Server=host.docker.internal;Port=3306;User ID=root;Password=YOUR_PASSWORD;Database=rscm_fais;SslMode=None;AllowPublicKeyRetrieval=True;
 JWT_SIGNING_KEY=replace-with-a-long-random-rscm-fais-secret
