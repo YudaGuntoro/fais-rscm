@@ -68,7 +68,7 @@ nano .env
 Required VPS `.env` values:
 
 ```env
-FRONTEND_ORIGIN=https://rscm-fais.your-domain.com
+FRONTEND_ORIGIN=https://fais.nusakaryadigital.com
 FRONTEND_ORIGIN_ALT=http://127.0.0.1:8095
 NEXT_PUBLIC_API_BASE_URL=
 SERVER_API_BASE_URL=http://api:8080
